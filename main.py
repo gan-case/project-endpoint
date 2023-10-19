@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket
 # from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
@@ -8,13 +8,11 @@ import base64
 import json
 import httpx
 import uvicorn
-import pandas as pd
-import numpy as np
-from annoy import AnnoyIndex
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
-
-from configs.prepare_env import download_all_files
-from similarity_finder.get_similar_images import get_similar_images
+# from configs.prepare_env import download_all_files
+# from similarity_finder.get_similar_images import get_similar_images
 
 FACEMORPH_API_URL = "https://api.facemorph.me/api"
 FACEMORPH_ENCODE_IMAGE = "/encodeimage"
@@ -22,12 +20,19 @@ FACEMORPH_GENERATE_IMAGE = "/face"
 
 EXPERIMENT_DIR = "experiments/"
 
-t = AnnoyIndex(2622, metric='euclidean')
-
 app = FastAPI()
 app.mount("/assets", StaticFiles(directory="assets", html=True), name="assets")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 app.mount("/experiments", StaticFiles(directory="experiments",
           html=True), name="experiments")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 test_html = """
 <!DOCTYPE html>
@@ -93,8 +98,8 @@ async def img_format(image, uuid):
 
 
 @app.get("/")
-async def get():
-    return FileResponse('index.html')
+async def get(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.websocket("/ws")
@@ -120,8 +125,8 @@ async def websocket_endpoint(websocket: WebSocket):
         await img_format(exp_dir + "/uploaded_image.jpeg", exp_dir)
         await websocket.send_json({"status_code": 3, "exp_uuid": exp_uuid})
 
-        similar_images = get_similar_images(t, exp_dir + "/uploaded_image.jpeg")
-        await websocket.send_json({"status_code": 4, "exp_uuid": exp_uuid, images: similar_images})
+        # similar_images = get_similar_images(t, exp_dir + "/uploaded_image.jpeg")
+        # await websocket.send_json({"status_code": 4, "exp_uuid": exp_uuid, images: similar_images})
 
         await websocket.send_json({"status_code": 5, "exp_uuid": exp_uuid, images: []})
 
@@ -130,9 +135,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 if __name__ == '__main__':
-    download_all_files()
+    # download_all_files()
 
-    global t.load("preprocessed_files/CACD2000_refined_images_embeddings_clusters.ann")
-
+    # global t.load("preprocessed_files/CACD2000_refined_images_embeddings_clusters.ann")
 
     uvicorn.run("main:app")

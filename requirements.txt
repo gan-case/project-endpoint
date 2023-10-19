@@ -1,11 +1,12 @@
 fastapi[all]
 progress
 websockets
-deepface
-annoy
+#deepface
+#annoy
 httpx
 pillow
 wget
-ninja
-gdown
-tqdm
+#ninja
+#gdown
+#tqdm
+jinja2
