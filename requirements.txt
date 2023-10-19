@@ -1,0 +1,11 @@
+fastapi[all]
+progress
+websockets
+deepface
+annoy
+httpx
+pillow
+wget
+ninja
+gdown
+tqdm
