@@ -14,7 +14,7 @@ from annoy import AnnoyIndex
 
 
 from configs.prepare_env import download_all_files
-
+from similarity_finder.get_similar_images import get_similar_images
 
 FACEMORPH_API_URL = "https://api.facemorph.me/api"
 FACEMORPH_ENCODE_IMAGE = "/encodeimage"
@@ -120,8 +120,8 @@ async def websocket_endpoint(websocket: WebSocket):
         await img_format(exp_dir + "/uploaded_image.jpeg", exp_dir)
         await websocket.send_json({"status_code": 3, "exp_uuid": exp_uuid})
 
-
-        await websocket.send_json({"status_code": 4, "exp_uuid": exp_uuid, images: []})
+        similar_images = get_similar_images(t, exp_dir + "/uploaded_image.jpeg")
+        await websocket.send_json({"status_code": 4, "exp_uuid": exp_uuid, images: similar_images})
 
         await websocket.send_json({"status_code": 5, "exp_uuid": exp_uuid, images: []})
 
