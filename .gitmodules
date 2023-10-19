@@ -1,3 +1,6 @@
 [submodule "similarity-finder"]
 	path = similarity-finder
 	url = https://github.com/gan-case/similarity-finder
+[submodule "similarity_finder"]
+	path = similarity_finder
+	url = https://github.com/gan-case/similarity_finder.git

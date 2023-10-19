@@ -12,7 +12,9 @@ import pandas as pd
 import numpy as np
 from annoy import AnnoyIndex
 
+
 from configs.prepare_env import download_all_files
+
 
 FACEMORPH_API_URL = "https://api.facemorph.me/api"
 FACEMORPH_ENCODE_IMAGE = "/encodeimage"
@@ -117,6 +119,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
         await img_format(exp_dir + "/uploaded_image.jpeg", exp_dir)
         await websocket.send_json({"status_code": 3, "exp_uuid": exp_uuid})
+
 
         await websocket.send_json({"status_code": 4, "exp_uuid": exp_uuid, images: []})
 
