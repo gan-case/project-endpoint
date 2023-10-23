@@ -33,10 +33,10 @@ MODEL_PATHS = {
         "path": "preprocessed_files"
     },
     "dataframe": {
-        "id": "1svruXLPaFKEXg45F9wQV7l0cQ3xHCK34",
-        "name": "dataframe_names_clusters_only.parquet.gzip",
+        "id": "1HFxHX2RkEr7_yVHnA-qk5Lj8CxOWrUda",
+        "name": "final_embeddings_clusters.parquet.gzip",
         "path": "preprocessed_files"
-    }
+    },
 }
 
 
