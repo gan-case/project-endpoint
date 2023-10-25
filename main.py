@@ -96,7 +96,8 @@ async def img_format(image, uuid):
 
 @app.get("/")
 async def get():
-    return FileResponse("index.html")
+    #return FileResponse("index.html")
+    return "ok"
 
 
 @app.websocket("/ws")
