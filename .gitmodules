@@ -7,3 +7,6 @@
 [submodule "FaceImageQuality"]
 	path = FaceImageQuality
 	url = https://github.com/gan-case/FaceImageQuality
+[submodule "image_morphing"]
+	path = image_morphing
+	url = https://github.com/gan-case/image_morphing.git
