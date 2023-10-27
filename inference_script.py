@@ -28,10 +28,13 @@ def run():
 	test_opts.test_batch_size=4
 	test_opts.n_images=None
 	test_opts.test_workers=4
+	test_opts.couple_outputs=False
 	test_opts.target_age='0,10,20,30,40,50,60,70,80'
 
-	out_path_results = os.path.join(test_opts.exp_dir, 'inference_side_by_side')
+	out_path_results = os.path.join(test_opts.exp_dir)#, 'inference_results')
+	#out_path_coupled = os.path.join(test_opts.exp_dir, 'inference_coupled')
 	os.makedirs(out_path_results, exist_ok=True)
+	#os.makedirs(out_path_coupled, exist_ok=True)
 
 	# update test options with options used during training
 	ckpt = torch.load(test_opts.checkpoint_path, map_location='cpu')
@@ -50,8 +53,7 @@ def run():
 	transforms_dict = dataset_args['transforms'](opts).get_transforms()
 	dataset = InferenceDataset(root=opts.data_path,
 							   transform=transforms_dict['transform_inference'],
-							   opts=opts,
-							   return_path=True)
+							   opts=opts)
 	dataloader = DataLoader(dataset,
 							batch_size=opts.test_batch_size,
 							shuffle=False,
@@ -62,12 +64,12 @@ def run():
 		opts.n_images = len(dataset)
 
 	global_time = []
-	global_i = 0
-	for input_batch, image_paths in tqdm(dataloader):
-		if global_i >= opts.n_images:
-			break
-		batch_results = {}
-		for idx, age_transformer in enumerate(age_transformers):
+	for age_transformer in age_transformers:
+		print(f"Running on target age: {age_transformer.target_age}")
+		global_i = 0
+		for input_batch in tqdm(dataloader):
+			if global_i >= opts.n_images:
+				break
 			with torch.no_grad():
 				input_age_batch = [age_transformer(img.cpu()).to('cuda') for img in input_batch]
 				input_age_batch = torch.stack(input_age_batch)
@@ -77,22 +79,32 @@ def run():
 				toc = time.time()
 				global_time.append(toc - tic)
 
-				resize_amount = (256, 256) if opts.resize_outputs else (1024, 1024)
 				for i in range(len(input_batch)):
 					result = tensor2im(result_batch[i])
-					im_path = image_paths[i]
-					input_im = log_image(input_batch[i], opts)
-					if im_path not in batch_results.keys():
-						batch_results[im_path] = np.array(input_im.resize(resize_amount))
-					batch_results[im_path] = np.concatenate([batch_results[im_path],
-															 np.array(result.resize(resize_amount))],
-															axis=1)
+					im_path = dataset.paths[global_i]
 
-		for im_path, res in batch_results.items():
-			image_name = os.path.basename(im_path)
-			im_save_path = os.path.join(out_path_results, image_name)
-			Image.fromarray(np.array(res)).save(im_save_path)
-			global_i += 1
+					if opts.couple_outputs or global_i % 100 == 0:
+						input_im = log_image(input_batch[i], opts)
+						resize_amount = (256, 256) if opts.resize_outputs else (1024, 1024)
+						res = np.concatenate([np.array(input_im.resize(resize_amount)),
+											  np.array(result.resize(resize_amount))], axis=1)
+						#age_out_path_coupled = os.path.join(out_path_coupled, age_transformer.target_age)
+						#os.makedirs(age_out_path_coupled, exist_ok=True)
+						#Image.fromarray(res).save(os.path.join(age_out_path_coupled, os.path.basename(im_path)))
+
+					age_out_path_results = os.path.join(out_path_results) #, age_transformer.target_age)
+					#os.makedirs(age_out_path_results, exist_ok=True)
+					image_name = os.path.basename(im_path)
+					im_save_path = os.path.join(age_out_path_results, image_name+"_age_"+age_transformer.target_age + ".jpg")
+					Image.fromarray(np.array(result.resize(resize_amount))).save(im_save_path)
+					global_i += 1
+
+	#stats_path = os.path.join(opts.exp_dir, 'stats.txt')
+	result_str = 'Runtime {:.4f}+-{:.4f}'.format(np.mean(global_time), np.std(global_time))
+	print(result_str)
+
+	#with open(stats_path, 'w') as f:
+	#	f.write(result_str)
 
 
 def run_on_batch(inputs, net, opts):

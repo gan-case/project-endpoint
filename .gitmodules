@@ -4,3 +4,6 @@
 [submodule "similarity_finder"]
 	path = similarity_finder
 	url = https://github.com/gan-case/similarity_finder.git
+[submodule "FaceImageQuality"]
+	path = FaceImageQuality
+	url = https://github.com/gan-case/FaceImageQuality
