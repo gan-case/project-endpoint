@@ -11,3 +11,4 @@ gdown
 tqdm
 jinja2
 mxnet-cu112
+gradio_client

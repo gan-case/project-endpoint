@@ -1,11 +1,15 @@
 from argparse import Namespace
 import os
+import argparse
 import time
 from tqdm import tqdm
 from PIL import Image
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+import gc
+from ast import literal_eval
+from numba import cuda
 
 import sys
 sys.path.append(".")
@@ -19,17 +23,17 @@ from options.test_options import TestOptions
 from models.psp import pSp
 
 
-def run():
+def run(output, datapath, target_age):
 	test_opts = Namespace()
-	test_opts.exp_dir='output'
+	test_opts.exp_dir=output
 	test_opts.checkpoint_path='checkpoint/sam_ffhq_aging.pt'
-	test_opts.data_path='reference'
+	test_opts.data_path=datapath
 	test_opts.resize_outputs=False
 	test_opts.test_batch_size=4
 	test_opts.n_images=None
 	test_opts.test_workers=4
 	test_opts.couple_outputs=False
-	test_opts.target_age='0,10,20,30,40,50,60,70,80'
+	test_opts.target_age=','.join(target_age)
 
 	out_path_results = os.path.join(test_opts.exp_dir)#, 'inference_results')
 	#out_path_coupled = os.path.join(test_opts.exp_dir, 'inference_coupled')
@@ -92,16 +96,22 @@ def run():
 						#os.makedirs(age_out_path_coupled, exist_ok=True)
 						#Image.fromarray(res).save(os.path.join(age_out_path_coupled, os.path.basename(im_path)))
 
-					age_out_path_results = os.path.join(out_path_results) #, age_transformer.target_age)
-					#os.makedirs(age_out_path_results, exist_ok=True)
+					age_out_path_results = os.path.join(out_path_results, age_transformer.target_age, "F0")
+					os.makedirs(age_out_path_results, exist_ok=True)
 					image_name = os.path.basename(im_path)
-					im_save_path = os.path.join(age_out_path_results, image_name+"_age_"+age_transformer.target_age + ".jpg")
+					im_save_path = os.path.join(age_out_path_results, image_name)
 					Image.fromarray(np.array(result.resize(resize_amount))).save(im_save_path)
 					global_i += 1
 
 	#stats_path = os.path.join(opts.exp_dir, 'stats.txt')
 	result_str = 'Runtime {:.4f}+-{:.4f}'.format(np.mean(global_time), np.std(global_time))
-	print(result_str)
+	del ckpt
+	
+	torch.cuda.empty_cache()
+	cuda.select_device(0)
+	cuda.close()
+	gc.collect()
+	#print(result_str)
 
 	#with open(stats_path, 'w') as f:
 	#	f.write(result_str)
@@ -113,4 +123,10 @@ def run_on_batch(inputs, net, opts):
 
 
 if __name__ == '__main__':
-	run()
+	parser = argparse.ArgumentParser(description='Process some integers.')
+	parser.add_argument("path1")
+	parser.add_argument("path2")
+	#parser.add_argument("age")
+
+	args = parser.parse_args()
+	run(args.path1, args.path2, ["30", "40", "50", "60", "70"])
